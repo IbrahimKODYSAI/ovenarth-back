@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const userSchema = mongoose.Schema(
   {
@@ -19,7 +19,7 @@ const userSchema = mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: "avatar.png",
+      default: "/avatar.png",
       required: false,
     },
     email: {
@@ -28,10 +28,6 @@ const userSchema = mongoose.Schema(
       required: true,
       unique: true,
       min: 6,
-    },
-    avatar: {
-      type: [Object],
-      required: false,
     },
     password: {
       type: String,
@@ -58,8 +54,12 @@ const userSchema = mongoose.Schema(
     stripe_account_id: "",
     stripe_seller: {},
     stripeSession: {},
+    passwordResetCode: {
+      data: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("User", userSchema);
+export default mongoose.model("User", userSchema);
