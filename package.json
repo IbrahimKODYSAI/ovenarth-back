@@ -32,6 +32,8 @@
     "mongoose": "^6.4.6",
     "morgan": "^1.10.0",
     "nanoid": "^2.1.11",
-    "nodemon": "^2.0.19"
+    "nodemon": "^2.0.19",
+    "query-string": "^7.1.1",
+    "stripe": "^9.16.0"
   }
 }
