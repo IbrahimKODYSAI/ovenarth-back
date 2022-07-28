@@ -1,11 +1,12 @@
 import User from "../models/user";
+import Course from "../models/course";
+
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import AWS from "aws-sdk";
+
 import dotenv from "dotenv";
 const Stripe = require("stripe")(process.env.STRIP_SECRET_KEY);
 
-import nanoid from "nanoid";
 import queryString from "query-string";
 
 dotenv.config();
@@ -13,7 +14,7 @@ dotenv.config();
 const becomeInstructor = async (req, res) => {
   // 1. find user from database
   try {
-    const userId = req.auth;
+    const userId = req.auth._id;
     const user = await User.findOne({ _id: userId });
 
     // 2. if user don't have stripe_ccount_id yet ,then create new
@@ -47,12 +48,11 @@ const becomeInstructor = async (req, res) => {
 
 const getAccountStatus = async (req, res) => {
   try {
-    const userId = req.auth;
+    const userId = req.auth._id;
     const user = await User.findOne({ _id: userId });
+    const account = await Stripe.account.retrieve(user.stripe_account_id);
 
-    const account = await Stripe.accounts.retrieve(user.stripe_account_id);
-
-    if (!account.charges_enable) {
+    if (!account.charges_enabled) {
       return res.status(401).send("Unauthorized");
     } else {
       const statusUpdated = await User.findByIdAndUpdate(
@@ -71,7 +71,38 @@ const getAccountStatus = async (req, res) => {
   }
 };
 
+const currentInstructor = async (req, res) => {
+  try {
+    const userId = req.auth._id;
+    const user = await User.findById({ _id: userId })
+      .select("-password")
+      .exec();
+
+    if (!user.role.includes("Instructor")) {
+      return res.sendStatus(403);
+    } else {
+      res.json({ ok: true });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const instructorCourse = async (req, res) => {
+  try {
+    const courses = await Course.find({ instructor: req.auth._id })
+      .sort({ createdAt: -1 })
+      .exec();
+
+    res.json(courses);
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 export default {
   becomeInstructor,
   getAccountStatus,
+  currentInstructor,
+  instructorCourse,
 };

@@ -13,7 +13,6 @@ const csrfProtection = csrf({ cookie: true });
 // express app
 
 const app = express();
-app.use(cookieParser());
 
 import path from "path";
 
@@ -31,14 +30,14 @@ mongoose
 // Middlewares
 
 app.use(cors({ origin: true }));
-
 app.use(express.urlencoded({ extended: true }));
-
+app.use(express.json({ limit: "5mb" }));
 app.use(
   express.json({
     verify: (req, res, buffer) => (req["rawBody"] = buffer),
   })
 );
+app.use(cookieParser());
 app.use(morgan("dev"));
 
 // Route  middlewares
