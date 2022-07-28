@@ -1,15 +1,21 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+import express from "express";
+import cookieParser from "cookie-parser";
+import mongoose from "mongoose";
+import csrf from "csurf";
+import cors from "cors";
 import { readdirSync } from "fs";
-const morgan = require("morgan");
+import morgan from "morgan";
 
-require("dotenv/config");
+import dotenv from "dotenv";
+dotenv.config();
 
+const csrfProtection = csrf({ cookie: true });
 // express app
 
 const app = express();
-const path = require("path");
+app.use(cookieParser());
+
+import path from "path";
 
 // connect to db
 
@@ -44,6 +50,12 @@ app.get("/", (req, res) => {
 readdirSync("./routes").map((route) =>
   app.use("/api", require(`./routes/${route}`))
 );
+
+app.use(csrfProtection);
+
+app.get("/api/csrf-token", (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
 
 // server listen
 
