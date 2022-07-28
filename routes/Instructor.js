@@ -10,9 +10,19 @@ router.post(
   instructorCtrl.becomeInstructor
 );
 router.post(
-  "/get_account-status",
+  "/get-account-status",
   requireSignin,
   instructorCtrl.getAccountStatus
+);
+router.get(
+  "/current-instructor",
+  requireSignin,
+  instructorCtrl.currentInstructor
+);
+router.get(
+  "/instructor-courses",
+  requireSignin,
+  instructorCtrl.instructorCourse
 );
 
 // router.get("/send-email", authCtrl.sendTestEmail);

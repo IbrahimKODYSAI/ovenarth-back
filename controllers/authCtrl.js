@@ -109,7 +109,7 @@ const login = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
   try {
-    const userId = req.auth;
+    const userId = req.auth._id;
     const foundUser = await User.findOne({ _id: userId });
     if (!foundUser) return res.status(400).send("User not found");
 
