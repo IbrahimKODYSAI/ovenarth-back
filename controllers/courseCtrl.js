@@ -5,6 +5,9 @@ import nanoid from "nanoid";
 import slugify from "slugify";
 import { readFileSync } from "fs";
 import express from "express";
+import course from "../models/course";
+import { exec } from "child_process";
+import { stringify } from "querystring";
 
 dotenv.config();
 
@@ -81,7 +84,6 @@ const uploadVideo = async (req, res) => {
     if (userId !== instructorId) {
       return res.status(400).send("Unauthorized");
     }
-
     const { video } = req.files;
     if (!video) return res.status(400).send("No video");
 
@@ -187,8 +189,8 @@ const create = async (req, res) => {
 };
 const edit = async (req, res) => {
   const { slug } = req.params;
-  const { name, category, description, price, paid, image } = req.body;
-
+  const { name, category, description, price, paid, image, course } = req.body;
+  const newcourse = course;
   try {
     const course = await Course.findOneAndUpdate(
       { slug },
@@ -199,6 +201,7 @@ const edit = async (req, res) => {
         price,
         paid,
         image,
+        lesson: newcourse.lesson,
         slug: slugify(name),
       },
       { new: true }
@@ -253,7 +256,104 @@ const addLesson = async (req, res) => {
     res.status(400).send("Add lesson failed");
   }
 };
+
+const updateLesson = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.auth._id;
+
+    const { video, title, content, free_preview, _id } = req.body;
+
+    const course = await Course.findOne({ slug }).select("instructor").exec();
+
+    if (userId != course.instructor._id) {
+      return res.status(400).send("Unauthorized");
+    }
+
+    const updated = await Course.updateOne(
+      { "lesson._id": _id },
+      {
+        $set: {
+          "lesson.$.title": title,
+          "lesson.$.content": content,
+          "lesson.$.video": video,
+          "lesson.$.free_preview": free_preview,
+        },
+      },
+      { new: true }
+    ).exec();
+
+    res.json({ ok: true });
+    console.log("updated", updated);
+  } catch (err) {
+    console.log(err);
+    res.status(400).send("Update lesson failed.");
+  }
+};
+
+const publishCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const course = await Course.findById(courseId).select("instructor").exec();
+
+    if (course.instructor != req.auth._id) {
+      return res.satatus(400).send("Unauthorized");
+    }
+
+    const published = await Course.findByIdAndUpdate(
+      courseId,
+      { published: true },
+      { new: true }
+    ).exec();
+    res.json(published);
+  } catch (err) {
+    return res.status(400).send("publish course failded");
+  }
+};
+
+const unpublishCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const course = await Course.findById(courseId).select("instructor").exec();
+
+    if (course.instructor != req.auth._id) {
+      return res.satatus(400).send("Unauthorized");
+    }
+
+    const unpublished = await Course.findByIdAndUpdate(
+      courseId,
+      { published: false },
+      { new: true }
+    ).exec();
+    res.json(unpublished);
+  } catch (err) {
+    return res.status(400).send("Unpublish course failded");
+  }
+};
+
+export const courses = async (req, res) => {
+  const all = await Course.find({ published: true })
+    .populate("instructor", "_id name")
+    .exec();
+  res.json(all);
+};
+
+// const removeLesson = async (req, res) => {
+//   const { slug, lessonId } = req.params;
+//   const course = await Course.findOne({ slug }).exec();
+//   console.log(course.instructor);
+//   if (req.auth._id != course.instructor) {
+//     return res.status(400).send("Unauthorized");
+//   }
+//   const courseToDelete = await Course.findByIdAndUpdate(course._id, {
+//     $pull: { lesson: { _id: lessonId } },
+//   }).exec();
+
+//   res.json({ ok: true });
+// };
+
 export default {
+  // removeLesson
   uploadImage,
   removeImage,
   uploadVideo,
@@ -263,4 +363,8 @@ export default {
   edit,
   addLesson,
   editImage,
+  updateLesson,
+  unpublishCourse,
+  publishCourse,
+  courses,
 };
